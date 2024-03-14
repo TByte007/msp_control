@@ -1,4 +1,4 @@
-module github.com/stronnag/msp_set_rx
+module github.com/TByte007/msp_control
 
 go 1.14
 
