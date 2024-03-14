@@ -99,7 +99,7 @@ type ModeRange struct {
 }
 
 type MSPSerial struct {
-	klass     int
+	class     int
 	sd        SerDev
 	usev2     bool
 	bypass    bool
@@ -321,7 +321,7 @@ func (m *MSPSerial) Read_msp(c0 chan SChan) {
 }
 
 func NewMSPSerial(dd DevDescription) *MSPSerial {
-	m := MSPSerial{swchan: -1, klass: dd.klass}
+	m := MSPSerial{swchan: -1, class: dd.klass}
 	switch dd.klass {
 	case DevClass_SERIAL:
 		p, err := serial.Open(dd.name, &serial.Mode{BaudRate: dd.param})
@@ -397,98 +397,98 @@ func MSPInit(dd DevDescription) *MSPSerial {
 
 	m.Send_msp(msp_API_VERSION, nil)
 	for done := false; !done; {
-//		select {
-//		case v := <-m.c0:
-	v := <-m.c0
-	switch v.cmd {
-			case msp_API_VERSION:
-				if v.len > 2 {
-					api = fmt.Sprintf("%d.%d", v.data[1], v.data[2])
-					m.vcapi = uint16(v.data[1])<<8 | uint16(v.data[2])
-					m.usev2 = (v.data[1] == 2)
-					m.Send_msp(msp_FC_VARIANT, nil)
-				}
-			case msp_FC_VARIANT:
-				fw = string(v.data[0:4])
-				m.Send_msp(msp_FC_VERSION, nil)
-			case msp_FC_VERSION:
-				vers = fmt.Sprintf("%d.%d.%d", v.data[0], v.data[1], v.data[2])
-				m.fcvers = uint32(v.data[0])<<16 | uint32(v.data[1])<<8 | uint32(v.data[2])
-				m.Send_msp(msp_BUILD_INFO, nil)
-				v6 = (v.data[0] >= 6)
-				if v.data[0] == 1 {
-					nchan = 16
-				}
-			case msp_BUILD_INFO:
-				gitrev = string(v.data[19:])
-				m.Send_msp(msp_BOARD_INFO, nil)
-			case msp_BOARD_INFO:
-				if v.len > 8 {
-					board = string(v.data[9:])
-				} else {
-					board = string(v.data[0:4])
-				}
-				fmt.Fprintf(os.Stderr, "%s v%s %s (%s) API %s\n", fw, vers, board, gitrev, api)
-				if m.usev2 {
-					lstr := len(SETTING_STR)
-					buf := make([]byte, lstr+1)
-					copy(buf, SETTING_STR)
-					buf[lstr] = 0
-					m.Send_msp(msp_COMMON_SETTING, buf)
-				} else {
-					m.Send_msp(msp_RX_MAP, nil)
-				}
-
-			case msp_COMMON_SETTING:
-				if v.len > 0 {
-					bystr := v.data[0]
-					if v6 {
-						bystr++
-					}
-					if bystr == 2 {
-						m.bypass = true
-					}
-					fmt.Printf("%s: %d (bypass %v)\n", SETTING_STR, bystr, m.bypass)
-				}
-				m.Send_msp(msp_RX_MAP, nil)
-
-			case msp_RX_MAP:
-				if v.len == 4 {
-					m.a = int8(v.data[0]) * 2
-					m.e = int8(v.data[1]) * 2
-					m.r = int8(v.data[2]) * 2
-					m.t = int8(v.data[3]) * 2
-					var cmap [4]byte
-					cmap[v.data[0]] = 'A'
-					cmap[v.data[1]] = 'E'
-					cmap[v.data[2]] = 'R'
-					cmap[v.data[3]] = 'T'
-					fmt.Fprintf(os.Stderr, "map: %s\n", cmap)
-				}
-				m.Send_msp(msp_NAME, nil)
-			case msp_NAME:
-				if v.len > 0 {
-					fmt.Fprintf(os.Stderr, "name: \"%s\"\n", v.data[:v.len])
-				}
-				m.Send_msp(msp_BOXNAMES, nil)
-			case msp_BOXNAMES:
-				if v.len > 0 {
-					fmt.Fprintf(os.Stderr, "box: %s\n", v.data[:v.len])
-					m.setup_box_masks(string(v.data))
-				} else {
-					fmt.Fprintln(os.Stderr, "No Boxen")
-				}
-				m.Send_msp(msp_MODE_RANGES, nil)
-
-			case msp_MODE_RANGES:
-				if v.len > 0 {
-					m.deserialise_modes(v.data)
-				}
-				done = true
-			default:
-				fmt.Fprintf(os.Stderr, "Unsolicited %d, length %d\n", v.cmd, v.len)
+		//		select {
+		//		case v := <-m.c0:
+		v := <-m.c0
+		switch v.cmd {
+		case msp_API_VERSION:
+			if v.len > 2 {
+				api = fmt.Sprintf("%d.%d", v.data[1], v.data[2])
+				m.vcapi = uint16(v.data[1])<<8 | uint16(v.data[2])
+				m.usev2 = (v.data[1] == 2)
+				m.Send_msp(msp_FC_VARIANT, nil)
 			}
+		case msp_FC_VARIANT:
+			fw = string(v.data[0:4])
+			m.Send_msp(msp_FC_VERSION, nil)
+		case msp_FC_VERSION:
+			vers = fmt.Sprintf("%d.%d.%d", v.data[0], v.data[1], v.data[2])
+			m.fcvers = uint32(v.data[0])<<16 | uint32(v.data[1])<<8 | uint32(v.data[2])
+			m.Send_msp(msp_BUILD_INFO, nil)
+			v6 = (v.data[0] >= 6)
+			if v.data[0] == 1 {
+				nchan = 16
+			}
+		case msp_BUILD_INFO:
+			gitrev = string(v.data[19:])
+			m.Send_msp(msp_BOARD_INFO, nil)
+		case msp_BOARD_INFO:
+			if v.len > 8 {
+				board = string(v.data[9:])
+			} else {
+				board = string(v.data[0:4])
+			}
+			fmt.Fprintf(os.Stderr, "%s v%s %s (%s) API %s\n", fw, vers, board, gitrev, api)
+			if m.usev2 {
+				lstr := len(SETTING_STR)
+				buf := make([]byte, lstr+1)
+				copy(buf, SETTING_STR)
+				buf[lstr] = 0
+				m.Send_msp(msp_COMMON_SETTING, buf)
+			} else {
+				m.Send_msp(msp_RX_MAP, nil)
+			}
+
+		case msp_COMMON_SETTING:
+			if v.len > 0 {
+				bystr := v.data[0]
+				if v6 {
+					bystr++
+				}
+				if bystr == 2 {
+					m.bypass = true
+				}
+				fmt.Printf("%s: %d (bypass %v)\n", SETTING_STR, bystr, m.bypass)
+			}
+			m.Send_msp(msp_RX_MAP, nil)
+
+		case msp_RX_MAP:
+			if v.len == 4 {
+				m.a = int8(v.data[0]) * 2
+				m.e = int8(v.data[1]) * 2
+				m.r = int8(v.data[2]) * 2
+				m.t = int8(v.data[3]) * 2
+				var cmap [4]byte
+				cmap[v.data[0]] = 'A'
+				cmap[v.data[1]] = 'E'
+				cmap[v.data[2]] = 'R'
+				cmap[v.data[3]] = 'T'
+				fmt.Fprintf(os.Stderr, "map: %s\n", cmap)
+			}
+			m.Send_msp(msp_NAME, nil)
+		case msp_NAME:
+			if v.len > 0 {
+				fmt.Fprintf(os.Stderr, "name: \"%s\"\n", v.data[:v.len])
+			}
+			m.Send_msp(msp_BOXNAMES, nil)
+		case msp_BOXNAMES:
+			if v.len > 0 {
+				fmt.Fprintf(os.Stderr, "box: %s\n", v.data[:v.len])
+				m.setup_box_masks(string(v.data))
+			} else {
+				fmt.Fprintln(os.Stderr, "No Boxen")
+			}
+			m.Send_msp(msp_MODE_RANGES, nil)
+
+		case msp_MODE_RANGES:
+			if v.len > 0 {
+				m.deserialise_modes(v.data)
+			}
+			done = true
+		default:
+			fmt.Fprintf(os.Stderr, "Unsolicited %d, length %d\n", v.cmd, v.len)
 		}
+	}
 	return m
 }
 

@@ -149,11 +149,11 @@ func parse_device(devstr string) DevDescription {
 }
 
 func main() {
-	log.SetPrefix("[msp_set_rx] ")
+	log.SetPrefix("[msp_control] ")
 	log.SetFlags(log.Ltime | log.Lmicroseconds)
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of msp_set_rx [options]\n")
+		fmt.Fprintf(os.Stderr, "Usage of msp_control [options]\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
