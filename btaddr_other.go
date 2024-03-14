@@ -17,13 +17,13 @@ func NewBT(id string) *BTConn {
 }
 
 func (bt *BTConn) Read(buf []byte) (int, error) {
-	return -1, errors.New("Unsupported OS")
+	return -1, errors.New("unsupported OS")
 }
 
 func (bt *BTConn) Write(buf []byte) (int, error) {
-	return -1, errors.New("Unsupported OS")
+	return -1, errors.New("unsupported OS")
 }
 func (bt *BTConn) Close() error {
-	return errors.New("Unsupported OS")
+	return errors.New("unsupported OS")
 
 }

@@ -1,6 +1,6 @@
 prefix ?= $$HOME/.local
 
-APP = msp_set_rx
+APP = msp_control
 UNAME := $(shell uname)
 
 BTSRC = btaddr_other.go

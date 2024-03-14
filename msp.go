@@ -3,13 +3,14 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"go.bug.st/serial"
 	"log"
 	"math/rand"
 	"net"
 	"os"
 	"sort"
 	"strings"
+
+	"go.bug.st/serial"
 )
 
 const (
@@ -351,7 +352,9 @@ func NewMSPSerial(dd DevDescription) *MSPSerial {
 		var err error
 		if dd.param1 != 0 {
 			raddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dd.name1, dd.param1))
-			laddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dd.name, dd.param))
+			if err == nil {
+				laddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dd.name, dd.param))
+			}
 		} else {
 			if dd.name == "" {
 				laddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dd.name, dd.param))
@@ -394,9 +397,10 @@ func MSPInit(dd DevDescription) *MSPSerial {
 
 	m.Send_msp(msp_API_VERSION, nil)
 	for done := false; !done; {
-		select {
-		case v := <-m.c0:
-			switch v.cmd {
+//		select {
+//		case v := <-m.c0:
+	v := <-m.c0
+	switch v.cmd {
 			case msp_API_VERSION:
 				if v.len > 2 {
 					api = fmt.Sprintf("%d.%d", v.data[1], v.data[2])
@@ -485,7 +489,6 @@ func MSPInit(dd DevDescription) *MSPSerial {
 				fmt.Fprintf(os.Stderr, "Unsolicited %d, length %d\n", v.cmd, v.len)
 			}
 		}
-	}
 	return m
 }
 
@@ -592,7 +595,7 @@ func (m *MSPSerial) serialise_rx(phase int, setthr int, fs bool) []byte {
 		binary.LittleEndian.PutUint16(buf[m.e:ee], uint16(rx_START+n))
 		n = rand.Intn(rx_RAND)
 		binary.LittleEndian.PutUint16(buf[m.r:re], uint16(rx_START+n))
-		n = rand.Intn(rx_RAND)
+		//n = rand.Intn(rx_RAND)
 		binary.LittleEndian.PutUint16(buf[m.t:te], uint16(990))
 	case PHASE_Quiescent:
 		binary.LittleEndian.PutUint16(buf[m.a:ae], baseval)

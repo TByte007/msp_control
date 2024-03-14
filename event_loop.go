@@ -84,7 +84,7 @@ func (m *MSPSerial) test_rx(setthr int, verbose bool, autoarm bool) {
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 
-	for done := false; done == false; {
+	for done := false; !done; {
 		select {
 		case <-ticker.C:
 			tdata := m.serialise_rx(phase, setthr, fs)
