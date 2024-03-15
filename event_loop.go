@@ -3,13 +3,14 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/mattn/go-tty"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/mattn/go-tty"
 )
 
 const (
@@ -87,7 +88,7 @@ func (m *MSPSerial) test_rx(setthr int, verbose bool, autoarm bool) {
 	for done := false; !done; {
 		select {
 		case <-ticker.C:
-			tdata := m.serialise_rx(phase, setthr, fs)
+			tdata := m.serialise_rx(phase, setthr, 0, 0, 0, fs)
 			m.Send_msp(msp_SET_RAW_RC, tdata)
 			if verbose {
 				txdata := deserialise_rx(tdata)

@@ -560,7 +560,10 @@ func (m *MSPSerial) deserialise_modes(buf []byte) {
 	}
 }
 
-func (m *MSPSerial) serialise_rx(phase int, setthr int, fs bool) []byte {
+func (m *MSPSerial) serialise_rx(phase int,
+	setthr int, roll int, pitch int, yaw int,
+	fs bool) []byte {
+
 	buf := make([]byte, nchan*2)
 	aoff := int(0)
 
@@ -582,50 +585,32 @@ func (m *MSPSerial) serialise_rx(phase int, setthr int, fs bool) []byte {
 	}
 
 	baseval := uint16(1500)
-	if fs {
+	if fs { // Trying to simulate a human moving the sticks
 		n := uint16(rand.Intn(rx_RAND))
-		baseval += (n - rx_RAND/2)
+		fs_val := baseval + (n - rx_RAND/2)
+		binary.LittleEndian.PutUint16(buf[m.a:ae], fs_val)
+		binary.LittleEndian.PutUint16(buf[m.e:ee], fs_val)
+		binary.LittleEndian.PutUint16(buf[m.r:re], baseval)
+	} else {
+		binary.LittleEndian.PutUint16(buf[m.a:ae], baseval+uint16(roll))
+		binary.LittleEndian.PutUint16(buf[m.e:ee], baseval+uint16(pitch))
+		binary.LittleEndian.PutUint16(buf[m.r:re], baseval+uint16(yaw))
 	}
 
 	switch phase {
 	case PHASE_Unknown:
-		n := rand.Intn(rx_RAND)
-		binary.LittleEndian.PutUint16(buf[m.a:ae], uint16(rx_START+n))
-		n = rand.Intn(rx_RAND)
-		binary.LittleEndian.PutUint16(buf[m.e:ee], uint16(rx_START+n))
-		n = rand.Intn(rx_RAND)
-		binary.LittleEndian.PutUint16(buf[m.r:re], uint16(rx_START+n))
-		//n = rand.Intn(rx_RAND)
 		binary.LittleEndian.PutUint16(buf[m.t:te], uint16(990))
 	case PHASE_Quiescent:
-		binary.LittleEndian.PutUint16(buf[m.a:ae], baseval)
-		binary.LittleEndian.PutUint16(buf[m.e:ee], baseval)
-		if m.bypass {
-			binary.LittleEndian.PutUint16(buf[m.r:re], uint16(2000))
-		} else {
-			binary.LittleEndian.PutUint16(buf[m.r:re], uint16(1500))
-		}
 		binary.LittleEndian.PutUint16(buf[m.t:te], uint16(1000))
-
 	case PHASE_Arming:
-		binary.LittleEndian.PutUint16(buf[m.a:ae], baseval)
-		binary.LittleEndian.PutUint16(buf[m.e:ee], baseval)
-		if m.bypass {
-			binary.LittleEndian.PutUint16(buf[m.r:re], uint16(1999))
-		} else {
-			binary.LittleEndian.PutUint16(buf[m.r:re], uint16(1501))
-		}
 		if aoff != 0 {
 			binary.LittleEndian.PutUint16(buf[aoff:aoff+2], uint16(m.swvalue))
 		}
 		binary.LittleEndian.PutUint16(buf[m.t:te], uint16(1000))
 	case PHASE_LowThrottle:
-		binary.LittleEndian.PutUint16(buf[m.a:ae], baseval)
-		binary.LittleEndian.PutUint16(buf[m.e:ee], baseval)
-		binary.LittleEndian.PutUint16(buf[m.r:re], uint16(1500))
 		thr := uint16(0)
 		if setthr < 1000 {
-			thr = uint16(1100 + rand.Intn(rx_RAND))
+			thr = uint16(1000)
 		} else {
 			thr = uint16(setthr)
 		}
@@ -636,7 +621,7 @@ func (m *MSPSerial) serialise_rx(phase int, setthr int, fs bool) []byte {
 	case PHASE_Disarming:
 		binary.LittleEndian.PutUint16(buf[m.a:ae], baseval)
 		binary.LittleEndian.PutUint16(buf[m.e:ee], baseval)
-		binary.LittleEndian.PutUint16(buf[m.r:re], uint16(1500))
+		binary.LittleEndian.PutUint16(buf[m.r:re], baseval)
 		binary.LittleEndian.PutUint16(buf[aoff:aoff+2], uint16(999))
 		binary.LittleEndian.PutUint16(buf[m.t:te], uint16(1000))
 	}
