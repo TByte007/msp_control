@@ -12,6 +12,7 @@ import (
 	"strings"
 )
 
+const log_prefix = "[msp_control] "
 const (
 	DevClass_NONE = iota
 	DevClass_SERIAL
@@ -149,7 +150,7 @@ func parse_device(devstr string) DevDescription {
 }
 
 func main() {
-	log.SetPrefix("[msp_control] ")
+	log.SetPrefix(log_prefix)
 	log.SetFlags(log.Ltime | log.Lmicroseconds)
 
 	flag.Usage = func() {
