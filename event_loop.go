@@ -20,6 +20,8 @@ const (
 	ASTATE_Disarmed
 )
 
+const max_stick = 300
+
 func get_status(v SChan) (status uint64, armflags uint32) {
 	if v.cmd == msp2_INAV_STATUS {
 		status = binary.LittleEndian.Uint64(v.data[13:21])
@@ -56,6 +58,7 @@ func (m *MSPSerial) test_rx(setthr int, verbose bool, autoarm bool) {
 	xboxflags := uint64(0)
 	xarmflags := uint32(0)
 	dpending := false
+	roll, pitch, yaw := 0, 0, 0
 
 	tty, err := tty.Open()
 	if err != nil {
@@ -77,10 +80,12 @@ func (m *MSPSerial) test_rx(setthr int, verbose bool, autoarm bool) {
 	cc := make(chan os.Signal, 1)
 	signal.Notify(cc, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	fmt.Println("Keypresses: 'A'/'a': toggle arming, 'Q'/'q': quit, 'F': quit to failsafe")
-	if setthr > 999 && setthr < 2001 {
-		fmt.Println("            '+'/'-' raise / lower throttle by 25µs")
-	}
+	fmt.Println("Keypresses: 'p'/'P': toggle arming, 'L': quit, 'F': quit to failsafe")
+	fmt.Println("            '+'/'-' raise / lower throttle by 25µs")
+	fmt.Println("            'c'/'C' Center sticks")
+	fmt.Println("            'a'<=>'d' Roll")
+	fmt.Println("            'w'<=>'s' Pitch")
+	fmt.Println("            'q'<=>'e' Yaw")
 	log.Printf("Start TX loop")
 
 	ticker := time.NewTicker(100 * time.Millisecond)
@@ -88,7 +93,7 @@ func (m *MSPSerial) test_rx(setthr int, verbose bool, autoarm bool) {
 	for done := false; !done; {
 		select {
 		case <-ticker.C:
-			tdata := m.serialise_rx(phase, setthr, 0, 0, 0, fs)
+			tdata := m.serialise_rx(phase, setthr, roll, pitch, yaw, fs)
 			m.Send_msp(msp_SET_RAW_RC, tdata)
 			if verbose {
 				txdata := deserialise_rx(tdata)
@@ -138,7 +143,7 @@ func (m *MSPSerial) test_rx(setthr int, verbose bool, autoarm bool) {
 
 		case ev := <-evchan:
 			switch ev {
-			case 'A', 'a':
+			case 'p', 'P':
 				switch phase {
 				case PHASE_Quiescent:
 					log.Println("Arming commanded")
@@ -149,32 +154,63 @@ func (m *MSPSerial) test_rx(setthr int, verbose bool, autoarm bool) {
 				default:
 				}
 			case 'F':
-				log.Println("Exit to F/S commanded")
+				log.Println("Exit to Fail Safe commanded")
 				done = true
-			case 'Q', 'q':
+			case 'L':
 				log.Println("Quit commanded")
 				phase, done, dpending = safe_quit(phase)
 			case 'v', 'V':
 				verbose = !verbose
-			case '+', '-':
-				if setthr > 999 && setthr < 2001 {
-					if ev == '+' {
-						setthr += 25
-					} else {
-						setthr -= 25
-					}
-					if setthr > 2000 {
-						setthr = 2000
-					} else if setthr < 1000 {
-						setthr = 1000
-					}
-					log.Printf("Throttle commanded: %d\n", setthr)
+			case '+':
+				setthr += 25
+				if setthr > 2000 {
+					setthr = 2000
+				}
+			case '-':
+				setthr -= 25
+				if setthr < 1000 {
+					setthr = 1000
+				}
+			case 'c', 'C', '`':
+				roll, pitch, yaw = 0, 0, 0
+				log.Println("Centering the sticks")
+			case 'd':
+				roll += 25
+				if roll > max_stick {
+					roll = max_stick
+				}
+			case 'a':
+				roll -= 25
+				if roll < -max_stick {
+					roll = -max_stick
+				}
+			case 's':
+				pitch += 25
+				if pitch > max_stick {
+					pitch = max_stick
+				}
+			case 'w':
+				pitch -= 25
+				if pitch < -max_stick {
+					pitch = -max_stick
+				}
+			case 'e':
+				yaw += 25
+				if yaw > max_stick {
+					yaw = max_stick
+				}
+			case 'q':
+				yaw -= 25
+				if yaw < -max_stick {
+					yaw = -max_stick
 				}
 			}
 		case <-cc:
 			log.Println("Interrupt")
 			phase, done, dpending = safe_quit(phase)
 		}
+		fmt.Printf("\r")
+		fmt.Printf("[R:%d, P:%d, Y:%d, T:%d]", roll, pitch, yaw, setthr)
 	}
 }
 

@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-const log_prefix = "[msp_control] "
+const log_prefix = "[msp_ctrl] "
 const (
 	DevClass_NONE = iota
 	DevClass_SERIAL

@@ -36,7 +36,7 @@ For older versions of this example, with INAV prior to INAV 1.8, you can try:
 # for ancient firmware
 feature RX_MSP
 ```
-However, don't be surprised if ancient versions fail to work with `msp_set_rx`.
+However, don't be surprised if ancient versions fail to work with `msp_control`.
 
 ## Building
 
@@ -49,21 +49,21 @@ However, don't be surprised if ancient versions fail to work with `msp_set_rx`.
 make
  ```
 
-This should result in a `msp_set_rx` application.
+This should result in a `msp_control` application.
 
 ### Windows
 
 For Windows (cross compile on non-Windows:)
 ```
-GOOS=windows go build -ldflags "-w -s" -o msp_set_rx.exe msp.go msp_set_rx.go btaddr_other.go inav_misc.go event_loop.go
+GOOS=windows go build -ldflags "-w -s" -o msp_control.exe msp.go msp_control.go btaddr_other.go inav_misc.go event_loop.go
 ```
 Natively, drop the `GOOS=windows` bit. With msys2, you can (probably) use the Makefile.
 
 ## Usage
 
 ```
-$ msp_set_rx --help
-Usage of msp_set_rx [options]
+$ msp_control --help
+Usage of msp_control [options]
   -auto-arm
     	Auto-arm FC when ready
   -b int
@@ -89,14 +89,14 @@ If a `-throttle` value has been specified, then, when armed it will run the moto
 
 * `+`, `-` raise / lower throttle by 25µs
 
-If the application is exited uncleanly, then on restarting `msp_set_rx`, the FC should recover from fail-safe (note roll and pitch are perturbed to force F/S recovery).
+If the application is exited uncleanly, then on restarting `msp_control`, the FC should recover from fail-safe (note roll and pitch are perturbed to force F/S recovery).
 
 ```
-$ ./msp_set_rx -d /dev/ttyUSB0 [-b baud]
+$ ./msp_control -d /dev/ttyUSB0 [-b baud]
 # and hence, probably, for example
-C:\> msp_set_rx.exe -d COM42 -b 115200
+C:\> msp_control.exe -d COM42 -b 115200
 # Linux, autodetect
-$ ./msp_set_rx
+$ ./msp_control
 ```
 
 Note: On Linux, `/dev/ttyUSB0` and `/dev/ttyACM0` are automatically detected.
@@ -110,8 +110,8 @@ Please also note that if you do not define a "low throttle" (`-throttle`) value,
 ### FC example
 
 ```
-./msp_set_rx
-[msp_set_rx] 19:20:08.885594 Using device /dev/ttyACM0
+./msp_control
+[msp_ctrl] 19:20:08.885594 Using device /dev/ttyACM0
 INAV v7.0.0 WINGFC (497c01eb) API 2.5
 nav_extra_arming_safety: 2 (bypass true)
 map: AETR
@@ -128,69 +128,69 @@ chan: 11, start: 1450, end: 2100 MANUAL
 chan: 12, start: 1600, end: 2100 BEEPER
 Arming set for channel 10 / 1800us
 Keypresses: 'A'/'a': toggle arming, 'Q'/'q': quit, 'F': quit to failsafe
-[msp_set_rx] 19:20:09.101738 Start TX loop
-[msp_set_rx] 19:20:09.228487 Box: FAILSAFE (40000000) Arm: RCLink (0x40000)
-[msp_set_rx] 19:20:09.932720 Box:  (0) Arm: Ready to arm (0x0)
+[msp_ctrl] 19:20:09.101738 Start TX loop
+[msp_ctrl] 19:20:09.228487 Box: FAILSAFE (40000000) Arm: RCLink (0x40000)
+[msp_ctrl] 19:20:09.932720 Box:  (0) Arm: Ready to arm (0x0)
 ```
-Depending on how early in the boot process you start `msp_set_rx`, you may also see some calibration messages.
+Depending on how early in the boot process you start `msp_control`, you may also see some calibration messages.
 
 Having reached the "Ready to arm" state, if you press `A`, the FC will be armed:
 ```
-[msp_set_rx] 19:31:55.324435 Box: ARM (1) Arm: Armed (0xc)
+[msp_ctrl] 19:31:55.324435 Box: ARM (1) Arm: Armed (0xc)
 ```
 
 And if `A` is pressed again, the FC is disarmed:
 ```
-[msp_set_rx] 19:33:36.633957 Box:  (0) Arm: Ready to arm (0x8)
+[msp_ctrl] 19:33:36.633957 Box:  (0) Arm: Ready to arm (0x8)
 ```
 
 Pressing `Q` or `Ctrl-C` will exit the application, if the FC is armed, it will be disarmed first.
 
 ```
-$ ./msp_set_rx
+$ ./msp_control
 ...
-[msp_set_rx] 08:55:50.226087 Start TX loop
-[msp_set_rx] 08:55:50.327397 Box: FAILSAFE (40000000) Arm: Ever armed RCLink (0x40028)
-[msp_set_rx] 08:55:51.027408 Box:  (0) Arm: Ever armed RCLink (0x40028)
-[msp_set_rx] 08:55:51.127391 Box:  (0) Arm: Ready to arm (0x28)
-[msp_set_rx] 08:55:53.107915 Arming commanded  # <---------- Press A key
-[msp_set_rx] 08:55:53.228029 Box: ARM (1) Arm: Armed (0x2c)
-[msp_set_rx] 08:55:55.511591 Quit commanded    # <---------- Press Q key
-[msp_set_rx] 08:55:55.828115 Box:  (0) Arm: Ready to arm (0x28)
+[msp_ctrl] 08:55:50.226087 Start TX loop
+[msp_ctrl] 08:55:50.327397 Box: FAILSAFE (40000000) Arm: Ever armed RCLink (0x40028)
+[msp_ctrl] 08:55:51.027408 Box:  (0) Arm: Ever armed RCLink (0x40028)
+[msp_ctrl] 08:55:51.127391 Box:  (0) Arm: Ready to arm (0x28)
+[msp_ctrl] 08:55:53.107915 Arming commanded  # <---------- Press A key
+[msp_ctrl] 08:55:53.228029 Box: ARM (1) Arm: Armed (0x2c)
+[msp_ctrl] 08:55:55.511591 Quit commanded    # <---------- Press Q key
+[msp_ctrl] 08:55:55.828115 Box:  (0) Arm: Ready to arm (0x28)
 
 ```
 
 Use `F` key press to exit without disarming, causing fail-safe:
 
 ```
-$ ./msp_set_rx
+$ ./msp_control
 ...
-msp_set_rx] 08:57:56.794411 Box:  (0) Arm: Ready to arm (0x28)
-[msp_set_rx] 08:57:57.998486 Arming commanded
-[msp_set_rx] 08:57:58.195017 Box: ARM (1) Arm: Armed (0x2c)
-[msp_set_rx] 08:58:01.214484 Exit to F/S commanded # <---------- Press F key
+msp_control] 08:57:56.794411 Box:  (0) Arm: Ready to arm (0x28)
+[msp_ctrl] 08:57:57.998486 Arming commanded
+[msp_ctrl] 08:57:58.195017 Box: ARM (1) Arm: Armed (0x2c)
+[msp_ctrl] 08:58:01.214484 Exit to F/S commanded # <---------- Press F key
 ```
 
 If we restart after failsafe:
 ```
-$ ./msp_set_rx
+$ ./msp_control
 ...
-[msp_set_rx] 08:58:48.488756 Start TX loop
-[msp_set_rx] 08:58:48.590155 Box: ARM,ANGLE,FAILSAFE (40000009) Arm: Armed (0x2c)
-[msp_set_rx] 08:58:49.489689 Box: ARM (1) Arm: Armed (0x2c)
+[msp_ctrl] 08:58:48.488756 Start TX loop
+[msp_ctrl] 08:58:48.590155 Box: ARM,ANGLE,FAILSAFE (40000009) Arm: Armed (0x2c)
+[msp_ctrl] 08:58:49.489689 Box: ARM (1) Arm: Armed (0x2c)
 ```
 
 Note the FC "Box" state shows `ARM,ANGLE,FAILSAFE`, and that we are still armed. It then quickly recovers (0.5s, i.e. meeting the required RX update rate) to a normal armed state, from which we can disarm /  quit cleanly.
 
-### SITL example
+### SITL / Demo mode example
 
-You can also use the INAV SITL to test. This has the advantage of not requiring hardware. The same arming prerequisites apply.
+You can also use the INAV SITL or Demo mode to test. This has the advantage of not requiring hardware. The same arming prerequisites apply.
 
 Here we specify the armed throttle and auto-arm:
 
 ```
-$ ./msp_set_rx -d tcp://localhost:5761 -throttle 1200 -auto-arm
-[msp_set_rx] 21:09:56.436998 Using device localhost
+$ ./msp_control -d tcp://localhost:5761 -throttle 1200 -auto-arm
+[msp_ctrl] 21:09:56.436998 Using device localhost
 INAV v7.0.0 SITL (3a2412e5) API 2.5
 nav_extra_arming_safety: 2 (bypass true)
 map: AETR
@@ -208,20 +208,20 @@ chan: 12, start: 1600, end: 2100 BEEPER
 Arming set for channel 10 / 1800us
 Keypresses: 'A'/'a': toggle arming, 'Q'/'q': quit, 'F': quit to failsafe
             '+'/'-' raise / lower throttle by 25µs
-[msp_set_rx] 09:01:06.155880 Start TX loop
-[msp_set_rx] 09:01:06.256949 Box: FAILSAFE (40000000) Arm: Ever armed RCLink (0x40028)
-[msp_set_rx] 09:01:06.956972 Box:  (0) Arm: Ever armed RCLink (0x40028)
-[msp_set_rx] 09:01:07.056953 Box:  (0) Arm: Ready to arm (0x28)
-[msp_set_rx] 09:01:07.256960 Box: ARM (1) Arm: Armed (0x2c)
-[msp_set_rx] 09:01:11.826990 Throttle commanded: 1225
-[msp_set_rx] 09:01:13.493910 Throttle commanded: 1250
-[msp_set_rx] 09:01:14.971894 Throttle commanded: 1275
-[msp_set_rx] 09:01:21.384503 Throttle commanded: 1250
-[msp_set_rx] 09:01:21.943347 Throttle commanded: 1225
-[msp_set_rx] 09:01:22.515390 Throttle commanded: 1200
-[msp_set_rx] 09:01:23.069359 Throttle commanded: 1175
-[msp_set_rx] 09:01:29.362560 Quit commanded
-[msp_set_rx] 09:01:29.756786 Box:  (0) Arm: Ready to arm (0x28)
+[msp_ctrl] 09:01:06.155880 Start TX loop
+[msp_ctrl] 09:01:06.256949 Box: FAILSAFE (40000000) Arm: Ever armed RCLink (0x40028)
+[msp_ctrl] 09:01:06.956972 Box:  (0) Arm: Ever armed RCLink (0x40028)
+[msp_ctrl] 09:01:07.056953 Box:  (0) Arm: Ready to arm (0x28)
+[msp_ctrl] 09:01:07.256960 Box: ARM (1) Arm: Armed (0x2c)
+[msp_ctrl] 09:01:11.826990 Throttle commanded: 1225
+[msp_ctrl] 09:01:13.493910 Throttle commanded: 1250
+[msp_ctrl] 09:01:14.971894 Throttle commanded: 1275
+[msp_ctrl] 09:01:21.384503 Throttle commanded: 1250
+[msp_ctrl] 09:01:21.943347 Throttle commanded: 1225
+[msp_ctrl] 09:01:22.515390 Throttle commanded: 1200
+[msp_ctrl] 09:01:23.069359 Throttle commanded: 1175
+[msp_ctrl] 09:01:29.362560 Quit commanded
+[msp_ctrl] 09:01:29.756786 Box:  (0) Arm: Ready to arm (0x28)
 ```
 Note that the SITL captures some of the early status / calibration changes.
 
@@ -238,7 +238,7 @@ In one terminal (with `eeprom.bin` pre-configured for MSP receiver), POSIXally a
 ```
 Then (another terminal / tab):
 ```
-msp_set_rx -d tcp://localhost:5761 [other otptions...]
+msp_control -d tcp://localhost:5761 [other otptions...]
 ```
 
 Note that in order for the SITL to arm, a simulator is needed.In the example we use [fl2sitl](https://github.com/stronnag/bbl2kml/wiki/fl2sitl) with `-minimal` to provide the simplest simulation that will unlock the SITL sensors and allow arming.
@@ -277,7 +277,7 @@ This is more comprehensive (and complex) example.
 * Ensure you've set a correct, valid AUX range to arm. In particular and for safety, the ARM range must be less or equal to 1000 in order to allow disarming.
 * Ensure you've met the required arming conditions
 * Use a supported FC or the **inav_SITL**
-* Remove the props etc.
+* Remove the props etc. (Meh)
 
 ## Postscript
 
