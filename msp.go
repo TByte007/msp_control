@@ -110,10 +110,12 @@ type MSPSerial struct {
 	r         int8
 	t         int8
 	c0        chan SChan
-	swchan    int8
-	swvalue   uint16
-	mranges   []ModeRange
+	armchan   int8
+	armval    uint16
+	angchan   int8
+	angval    uint16
 	arm_mask  uint64
+	mranges   []ModeRange
 	fail_mask uint64
 	boxparts  []string
 }
@@ -321,7 +323,7 @@ func (m *MSPSerial) Read_msp(c0 chan SChan) {
 }
 
 func NewMSPSerial(dd DevDescription) *MSPSerial {
-	m := MSPSerial{swchan: -1, class: dd.klass}
+	m := MSPSerial{armchan: -1, class: dd.klass}
 	switch dd.klass {
 	case DevClass_SERIAL:
 		p, err := serial.Open(dd.name, &serial.Mode{BaudRate: dd.param})
@@ -537,7 +539,7 @@ func (m *MSPSerial) deserialise_modes(buf []byte) {
 			break
 		}
 		if buf[i+3] != 0 {
-			invalid := (buf[0] == PERM_ARM && (buf[i+3]-buf[i+2]) > 40)
+			invalid := (buf[0] == PERM_ARM && (buf[i+3]-buf[i+2]) > 40) // 40 * 25us = 1000us
 			if !invalid {
 				m.mranges = append(m.mranges, ModeRange{buf[i], buf[i+1], buf[i+2], buf[i+3]})
 			}
@@ -553,9 +555,14 @@ func (m *MSPSerial) deserialise_modes(buf []byte) {
 
 	for _, r := range m.mranges {
 		dump_mode(r)
-		if r.boxid == PERM_ARM {
-			m.swchan = 4 + int8(r.chanidx)
-			m.swvalue = uint16(r.end+r.start)*25/2 + 900
+		switch r.boxid {
+		case PERM_ARM:
+			m.armchan = 4 + int8(r.chanidx)
+			m.armval = uint16(r.end+r.start)*25/2 + 900
+		case PERM_ANGLE:
+			m.angchan = 4 + int8(r.chanidx)
+			m.angval = uint16(r.end+r.start)*25/2 + 900
+
 		}
 	}
 }
@@ -565,11 +572,7 @@ func (m *MSPSerial) serialise_rx(phase int,
 	fs bool) []byte {
 
 	buf := make([]byte, nchan*2)
-	aoff := int(0)
-
-	if m.swchan != -1 {
-		aoff = int(m.swchan) * 2
-	}
+	armoff, angoff := int(0), int(0)
 
 	var ae = m.a + 2
 	var ee = m.e + 2
@@ -580,8 +583,13 @@ func (m *MSPSerial) serialise_rx(phase int,
 		binary.LittleEndian.PutUint16(buf[i*2:2+i*2], uint16(1000))
 	}
 
-	if aoff != 0 {
-		binary.LittleEndian.PutUint16(buf[aoff:aoff+2], uint16(1001)) // a little clue as to the arm channel
+	if m.armchan != -1 {
+		armoff = int(m.armchan) * 2
+		binary.LittleEndian.PutUint16(buf[armoff:armoff+2], uint16(1001)) // a little clue as to the arm channel
+	}
+	if m.angchan != -1 {
+		angoff = int(m.angchan) * 2
+		binary.LittleEndian.PutUint16(buf[angoff:angoff+2], m.angval) // a little clue as to the ang channel
 	}
 
 	baseval := uint16(1500)
@@ -603,8 +611,8 @@ func (m *MSPSerial) serialise_rx(phase int,
 	case PHASE_Quiescent:
 		binary.LittleEndian.PutUint16(buf[m.t:te], uint16(1000))
 	case PHASE_Arming:
-		if aoff != 0 {
-			binary.LittleEndian.PutUint16(buf[aoff:aoff+2], uint16(m.swvalue))
+		if m.armchan != -1 {
+			binary.LittleEndian.PutUint16(buf[armoff:armoff+2], uint16(m.armval))
 		}
 		binary.LittleEndian.PutUint16(buf[m.t:te], uint16(1000))
 	case PHASE_LowThrottle:
@@ -615,14 +623,14 @@ func (m *MSPSerial) serialise_rx(phase int,
 			thr = uint16(setthr)
 		}
 		binary.LittleEndian.PutUint16(buf[m.t:te], uint16(thr))
-		if aoff != 0 {
-			binary.LittleEndian.PutUint16(buf[aoff:aoff+2], uint16(m.swvalue))
+		if m.armchan != -1 {
+			binary.LittleEndian.PutUint16(buf[armoff:armoff+2], uint16(m.armval))
 		}
 	case PHASE_Disarming:
 		binary.LittleEndian.PutUint16(buf[m.a:ae], baseval)
 		binary.LittleEndian.PutUint16(buf[m.e:ee], baseval)
 		binary.LittleEndian.PutUint16(buf[m.r:re], baseval)
-		binary.LittleEndian.PutUint16(buf[aoff:aoff+2], uint16(999))
+		binary.LittleEndian.PutUint16(buf[armoff:armoff+2], uint16(999))
 		binary.LittleEndian.PutUint16(buf[m.t:te], uint16(1000))
 	}
 	return buf

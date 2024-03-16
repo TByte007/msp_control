@@ -161,10 +161,10 @@ func main() {
 
 	devdesc := check_device()
 	s := MSPInit(devdesc)
-	if s.swchan == -1 || s.swvalue < 1000 {
+	if s.armchan == -1 || s.armval < 1000 {
 		log.Fatalln("Mis-configured arm switch --- see README")
 	} else {
-		fmt.Printf("Arming set for channel %d / %dus\n", s.swchan+1, s.swvalue)
+		fmt.Printf("Arming set for channel %d / %dus\n", s.armchan+1, s.armval)
 		s.test_rx(*setthr, *verbose, *auto_arm)
 	}
 }
