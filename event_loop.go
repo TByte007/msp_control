@@ -51,7 +51,7 @@ func (m *MSPSerial) find_status_cmd() (stscmd uint16) {
 	return stscmd
 }
 
-func (m *MSPSerial) test_rx(setthr int, verbose bool, autoarm bool) {
+func (m *MSPSerial) main_rx_loop(setthr int, verbose bool, autoarm bool) {
 	phase := PHASE_Quiescent
 	stscmd := m.find_status_cmd()
 	fs := false
@@ -161,7 +161,7 @@ func (m *MSPSerial) test_rx(setthr int, verbose bool, autoarm bool) {
 				phase, done, dpending = safe_quit(phase)
 			case 'v', 'V':
 				verbose = !verbose
-			case '+':
+			case '+', '=':
 				setthr += 25
 				if setthr > 2000 {
 					setthr = 2000

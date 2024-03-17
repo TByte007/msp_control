@@ -115,6 +115,7 @@ type MSPSerial struct {
 	angchan   int8
 	angval    uint16
 	arm_mask  uint64
+	cmode     int
 	mranges   []ModeRange
 	fail_mask uint64
 	boxparts  []string
@@ -395,6 +396,8 @@ func MSPInit(dd DevDescription) *MSPSerial {
 
 	m := NewMSPSerial(dd)
 	m.c0 = make(chan SChan)
+	m.cmode = PERM_ANGLE // Set default mode
+
 	go m.Read_msp(m.c0)
 
 	m.Send_msp(msp_API_VERSION, nil)
@@ -587,9 +590,14 @@ func (m *MSPSerial) serialise_rx(phase int,
 		armoff = int(m.armchan) * 2
 		binary.LittleEndian.PutUint16(buf[armoff:armoff+2], uint16(1001)) // a little clue as to the arm channel
 	}
-	if m.angchan != -1 {
-		angoff = int(m.angchan) * 2
-		binary.LittleEndian.PutUint16(buf[angoff:angoff+2], m.angval) // a little clue as to the ang channel
+	switch m.cmode {
+	case PERM_ANGLE:
+		if m.angchan != -1 {
+			angoff = int(m.angchan) * 2
+			binary.LittleEndian.PutUint16(buf[angoff:angoff+2], m.angval) // a little clue as to the ang channel
+		}
+	case PERM_HORIZON:
+	case PERM_RTH:
 	}
 
 	baseval := uint16(1500)

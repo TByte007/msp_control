@@ -165,6 +165,6 @@ func main() {
 		log.Fatalln("Mis-configured arm switch --- see README")
 	} else {
 		fmt.Printf("Arming set for channel %d / %dus\n", s.armchan+1, s.armval)
-		s.test_rx(*setthr, *verbose, *auto_arm)
+		s.main_rx_loop(*setthr, *verbose, *auto_arm)
 	}
 }
