@@ -66,6 +66,7 @@ func (m *MSPSerial) main_rx_loop(setthr int, verbose bool, autoarm bool) {
 	xboxflags := uint64(0)
 	xarmflags := uint32(0)
 	dpending := false
+
 	vrc := vRCset{ // Virtual RC
 		thr: setthr,
 		fs:  false,
