@@ -22,6 +22,15 @@ const (
 
 const max_stick = 300
 
+// Virtual RC settings
+type vRCset struct {
+	thr   int // Throttle
+	roll  int
+	pitch int
+	yaw   int
+	fs    bool // Failsafe
+}
+
 func get_status(v SChan) (status uint64, armflags uint32) {
 	if v.cmd == msp2_INAV_STATUS {
 		status = binary.LittleEndian.Uint64(v.data[13:21])
@@ -54,11 +63,13 @@ func (m *MSPSerial) find_status_cmd() (stscmd uint16) {
 func (m *MSPSerial) main_rx_loop(setthr int, verbose bool, autoarm bool) {
 	phase := PHASE_Quiescent
 	stscmd := m.find_status_cmd()
-	fs := false
 	xboxflags := uint64(0)
 	xarmflags := uint32(0)
 	dpending := false
-	roll, pitch, yaw := 0, 0, 0
+	vrc := vRCset{ // Virtual RC
+		thr: setthr,
+		fs:  false,
+	}
 
 	tty, err := tty.Open()
 	if err != nil {
@@ -93,7 +104,7 @@ func (m *MSPSerial) main_rx_loop(setthr int, verbose bool, autoarm bool) {
 	for done := false; !done; {
 		select {
 		case <-ticker.C:
-			tdata := m.serialise_rx(phase, setthr, roll, pitch, yaw, fs)
+			tdata := m.serialise_rx(phase, vrc)
 			m.Send_msp(msp_SET_RAW_RC, tdata)
 			if verbose {
 				txdata := deserialise_rx(tdata)
@@ -117,7 +128,7 @@ func (m *MSPSerial) main_rx_loop(setthr int, verbose bool, autoarm bool) {
 					boxflags, armflags := get_status(v)
 					if boxflags != xboxflags || xarmflags != armflags {
 						log.Printf("Box: %s (%x) Arm: %s\n", m.format_box(boxflags), boxflags, arm_status(armflags))
-						fs = ((boxflags & m.fail_mask) == m.fail_mask)
+						vrc.fs = ((boxflags & m.fail_mask) == m.fail_mask)
 						if boxflags&m.arm_mask == 0 { // not armed
 							if armflags < 0x80 { // ready to arm
 								if autoarm {
@@ -161,48 +172,50 @@ func (m *MSPSerial) main_rx_loop(setthr int, verbose bool, autoarm bool) {
 				phase, done, dpending = safe_quit(phase)
 			case 'v', 'V':
 				verbose = !verbose
+			case '5':
+
 			case '+', '=':
-				setthr += 25
-				if setthr > 2000 {
-					setthr = 2000
+				vrc.thr += 25
+				if vrc.thr > 2000 {
+					vrc.thr = 2000
 				}
 			case '-':
-				setthr -= 25
-				if setthr < 1000 {
-					setthr = 1000
+				vrc.thr -= 25
+				if vrc.thr < 1000 {
+					vrc.thr = 1000
 				}
 			case 'c', 'C', '`':
-				roll, pitch, yaw = 0, 0, 0
+				vrc.roll, vrc.pitch, vrc.yaw = 0, 0, 0
 				log.Println("Centering the sticks")
 			case 'd':
-				roll += 25
-				if roll > max_stick {
-					roll = max_stick
+				vrc.roll += 25
+				if vrc.roll > max_stick {
+					vrc.roll = max_stick
 				}
 			case 'a':
-				roll -= 25
-				if roll < -max_stick {
-					roll = -max_stick
+				vrc.roll -= 25
+				if vrc.roll < -max_stick {
+					vrc.roll = -max_stick
 				}
 			case 's':
-				pitch += 25
-				if pitch > max_stick {
-					pitch = max_stick
+				vrc.pitch += 25
+				if vrc.pitch > max_stick {
+					vrc.pitch = max_stick
 				}
 			case 'w':
-				pitch -= 25
-				if pitch < -max_stick {
-					pitch = -max_stick
+				vrc.pitch -= 25
+				if vrc.pitch < -max_stick {
+					vrc.pitch = -max_stick
 				}
 			case 'e':
-				yaw += 25
-				if yaw > max_stick {
-					yaw = max_stick
+				vrc.yaw += 25
+				if vrc.yaw > max_stick {
+					vrc.yaw = max_stick
 				}
 			case 'q':
-				yaw -= 25
-				if yaw < -max_stick {
-					yaw = -max_stick
+				vrc.yaw -= 25
+				if vrc.yaw < -max_stick {
+					vrc.yaw = -max_stick
 				}
 			}
 		case <-cc:
@@ -210,7 +223,8 @@ func (m *MSPSerial) main_rx_loop(setthr int, verbose bool, autoarm bool) {
 			phase, done, dpending = safe_quit(phase)
 		}
 		fmt.Printf("\r")
-		fmt.Printf("[R:%d, P:%d, Y:%d, T:%d]", roll, pitch, yaw, setthr)
+		fmt.Printf("[R:%d, P:%d, Y:%d, T:%d]",
+			vrc.roll, vrc.pitch, vrc.yaw, vrc.thr)
 	}
 }
 

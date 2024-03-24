@@ -99,7 +99,7 @@ type ModeRange struct {
 }
 
 type MSPSerial struct {
-	class     int
+	klass     int
 	sd        SerDev
 	usev2     bool
 	bypass    bool
@@ -115,7 +115,7 @@ type MSPSerial struct {
 	angchan   int8
 	angval    uint16
 	arm_mask  uint64
-	cmode     int
+	cmode     int // Current mode
 	mranges   []ModeRange
 	fail_mask uint64
 	boxparts  []string
@@ -324,7 +324,7 @@ func (m *MSPSerial) Read_msp(c0 chan SChan) {
 }
 
 func NewMSPSerial(dd DevDescription) *MSPSerial {
-	m := MSPSerial{armchan: -1, class: dd.klass}
+	m := MSPSerial{armchan: -1, klass: dd.klass}
 	switch dd.klass {
 	case DevClass_SERIAL:
 		p, err := serial.Open(dd.name, &serial.Mode{BaudRate: dd.param})
@@ -570,9 +570,11 @@ func (m *MSPSerial) deserialise_modes(buf []byte) {
 	}
 }
 
-func (m *MSPSerial) serialise_rx(phase int,
-	setthr int, roll int, pitch int, yaw int,
-	fs bool) []byte {
+//func (m *MSPSerial) serialise_rx(phase int,
+//	setthr int, roll int, pitch int, yaw int,
+//	fs bool) []byte {
+
+func (m *MSPSerial) serialise_rx(phase int, vrc vRCset) []byte {
 
 	buf := make([]byte, nchan*2)
 	armoff, angoff := int(0), int(0)
@@ -601,16 +603,16 @@ func (m *MSPSerial) serialise_rx(phase int,
 	}
 
 	baseval := uint16(1500)
-	if fs { // Trying to simulate a human moving the sticks
+	if vrc.fs { // Trying to simulate a human moving the sticks
 		n := uint16(rand.Intn(rx_RAND))
 		fs_val := baseval + (n - rx_RAND/2)
 		binary.LittleEndian.PutUint16(buf[m.a:ae], fs_val)
 		binary.LittleEndian.PutUint16(buf[m.e:ee], fs_val)
 		binary.LittleEndian.PutUint16(buf[m.r:re], baseval)
 	} else {
-		binary.LittleEndian.PutUint16(buf[m.a:ae], baseval+uint16(roll))
-		binary.LittleEndian.PutUint16(buf[m.e:ee], baseval+uint16(pitch))
-		binary.LittleEndian.PutUint16(buf[m.r:re], baseval+uint16(yaw))
+		binary.LittleEndian.PutUint16(buf[m.a:ae], baseval+uint16(vrc.roll))
+		binary.LittleEndian.PutUint16(buf[m.e:ee], baseval+uint16(vrc.pitch))
+		binary.LittleEndian.PutUint16(buf[m.r:re], baseval+uint16(vrc.yaw))
 	}
 
 	switch phase {
@@ -625,10 +627,10 @@ func (m *MSPSerial) serialise_rx(phase int,
 		binary.LittleEndian.PutUint16(buf[m.t:te], uint16(1000))
 	case PHASE_LowThrottle:
 		thr := uint16(0)
-		if setthr < 1000 {
+		if vrc.thr < 1000 {
 			thr = uint16(1000)
 		} else {
-			thr = uint16(setthr)
+			thr = uint16(vrc.thr)
 		}
 		binary.LittleEndian.PutUint16(buf[m.t:te], uint16(thr))
 		if m.armchan != -1 {
