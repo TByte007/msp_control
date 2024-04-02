@@ -6,13 +6,7 @@ This is a small project that builds upon Jonathan Hudson's [msp_set_rx](https://
 
 ### Why
 
-Every few months, someone will come along on INAV Github / RC Groups / Telegram / Discord / some other random support channel and state that `RX_MSP` / `set receiver_type = MSP`  doesn't work.
-
-Well it does, if you do it correctly. This example demonstrates usage.
-
-As Go is available on pretty much any OS, you can even verify that it works, with this small application.
-
-**NOTE: The previous, verbose, timer activated version of this tool is now in the `legacy` branch, should you really want to play with that**
+So it is easier to for you destroy your drone. The second reason is to implement / test ways to send commands to the drone by an external logic of any kind.
 
 ## FC Prerequisites
 
@@ -139,12 +133,12 @@ Having reached the "Ready to arm" state, if you press `A`, the FC will be armed:
 [msp_ctrl] 19:31:55.324435 Box: ARM (1) Arm: Armed (0xc)
 ```
 
-And if `A` is pressed again, the FC is disarmed:
+And if `P` is pressed again, the FC is disarmed:
 ```
 [msp_ctrl] 19:33:36.633957 Box:  (0) Arm: Ready to arm (0x8)
 ```
 
-Pressing `Q` or `Ctrl-C` will exit the application, if the FC is armed, it will be disarmed first.
+Pressing `L` or `Ctrl-C` will exit the application, if the FC is armed, it will be disarmed first.
 
 ```
 $ ./msp_control
@@ -153,9 +147,9 @@ $ ./msp_control
 [msp_ctrl] 08:55:50.327397 Box: FAILSAFE (40000000) Arm: Ever armed RCLink (0x40028)
 [msp_ctrl] 08:55:51.027408 Box:  (0) Arm: Ever armed RCLink (0x40028)
 [msp_ctrl] 08:55:51.127391 Box:  (0) Arm: Ready to arm (0x28)
-[msp_ctrl] 08:55:53.107915 Arming commanded  # <---------- Press A key
+[msp_ctrl] 08:55:53.107915 Arming commanded  # <---------- Press P key
 [msp_ctrl] 08:55:53.228029 Box: ARM (1) Arm: Armed (0x2c)
-[msp_ctrl] 08:55:55.511591 Quit commanded    # <---------- Press Q key
+[msp_ctrl] 08:55:55.511591 Quit commanded    # <---------- Press L key
 [msp_ctrl] 08:55:55.828115 Box:  (0) Arm: Ready to arm (0x28)
 
 ```
