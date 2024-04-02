@@ -2,7 +2,7 @@
 
 ## Overview
 
-This golang program exercises `MSP_SET_RAW_RC`. This is intended to be a learning / experimental / educational tool rather than an end user application.
+This is a small project that builds upon Jonathan Hudson's [msp_set_rx](https://github.com/stronnag/msp_set_rx) and adds more control over the drone over MSP but makes it easier for you to destroy your drone.
 
 ### Why
 
