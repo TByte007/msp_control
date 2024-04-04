@@ -6,7 +6,7 @@ This is a small project that builds upon Jonathan Hudson's [msp_set_rx](https://
 
 ### Why
 
-So it is easier to for you destroy your drone. The second reason is to implement / test ways to send commands to the drone by an external logic of any kind.
+So it is easier for you destroy your drone. The second reason is to implement / test ways to send commands to the drone by an external logic of any kind.
 
 ## FC Prerequisites
 
